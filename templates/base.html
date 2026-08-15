@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Tattoo Studio{% endblock %}</title>
+    
+    <!-- Google Fonts for modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+    
+    {% load static %}
+    <link rel="icon" type="image/jpeg" href="{% static 'img/favicon.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <header class="glass-header">
+        <nav class="container nav-bar">
+            <a href="{% url 'portfolio:index' %}" class="logo">INK<span>STUDIO</span></a>
+            
+            <!-- Hamburger Menu Button -->
+            <button class="menu-toggle" aria-label="Abrir menu" id="mobile-menu-btn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            
+            <ul class="nav-links" id="nav-links">
+                <li><a href="{% url 'portfolio:index' %}">Trabalhos</a></li>
+                <li><a href="{% url 'scheduling:request' %}">Agendar Horário</a></li>
+                <li><a href="{% url 'billing:dashboard' %}" class="btn-primary">Acesso Restrito</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        {% if messages %}
+        <div class="container">
+            <ul class="messages">
+                {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer>
+        <div class="container footer-content">
+            <p>&copy; 2026 Ink Studio. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Intercepta cliques em links
+            const links = document.querySelectorAll('a[href]:not([target="_blank"]):not([href^="#"]):not([href^="javascript:"])');
+            links.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    if (e.ctrlKey || e.shiftKey || e.metaKey || e.altKey) return;
+                    
+                    e.preventDefault();
+                    const targetUrl = this.href;
+                    document.querySelectorAll('main, footer').forEach(el => el.classList.add('fade-out'));
+                    
+                    setTimeout(() => {
+                        window.location.href = targetUrl;
+                    }, 250); // 250ms = tempo da animação
+                });
+            });
+
+            // Intercepta submits de formulários
+            const forms = document.querySelectorAll('form:not([target="_blank"])');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    document.querySelectorAll('main, footer').forEach(el => el.classList.add('fade-out'));
+                });
+            });
+        });
+
+        // Resolve bug do botão voltar no Safari/iOS (que guarda estado da página com opacidade 0)
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted) {
+                document.querySelectorAll('main, footer').forEach(el => el.classList.remove('fade-out'));
+            }
+        });
+
+        // Hamburger Menu Logic
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const navLinks = document.getElementById('nav-links');
+        
+        if (mobileMenuBtn && navLinks) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenuBtn.classList.toggle('active');
+                navLinks.classList.toggle('active');
+            });
+            
+            // Close menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!mobileMenuBtn.contains(e.target) && !navLinks.contains(e.target) && navLinks.classList.contains('active')) {
+                    mobileMenuBtn.classList.remove('active');
+                    navLinks.classList.remove('active');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

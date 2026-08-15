@@ -1,0 +1,662 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Trabalhos - Ink Studio{% endblock %}
+
+{% block content %}
+<style>
+    /* Filtros */
+    .filter-controls {
+        text-align: center;
+        margin-bottom: 2.5rem;
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    .btn-filter {
+        background: transparent;
+        border: 1px solid var(--glass-border);
+        color: var(--text-secondary);
+        padding: 0.6rem 1.5rem;
+        border-radius: 30px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-family: 'Outfit', sans-serif;
+    }
+    .btn-filter:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+    .btn-filter.active {
+        background: var(--accent);
+        color: #000;
+        border-color: var(--accent);
+        font-weight: 600;
+    }
+
+    /* Main Tabs */
+    .main-tabs {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-bottom: 3rem;
+        border-bottom: 1px solid var(--glass-border);
+        padding-bottom: 1rem;
+    }
+    .main-tab-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 1.2rem;
+        font-family: 'Playfair Display', serif;
+        cursor: pointer;
+        transition: all 0.3s;
+        position: relative;
+    }
+    .main-tab-btn:hover {
+        color: var(--accent);
+    }
+    .main-tab-btn.active {
+        color: var(--accent);
+        font-weight: 600;
+    }
+    .main-tab-btn.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1rem;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: var(--accent);
+    }
+
+    .main-section {
+        display: none;
+        animation: fadeIn 0.4s ease;
+    }
+    .main-section.active {
+        display: block;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Sobre Mim */
+    .about-layout {
+        display: flex;
+        gap: 4rem;
+        align-items: center;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    .portfolio-hero {
+        position: relative;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 2rem 4rem 2rem;
+        margin: 0 auto 4rem auto;
+        overflow: hidden;
+        gap: 3rem;
+        max-width: 1200px;
+    }
+    .portfolio-hero-content {
+        flex: 1;
+        text-align: left;
+        padding: 2rem;
+    }
+    .portfolio-hero-image-wrapper {
+        flex: 1;
+        display: flex;
+        justify-content: flex-end;
+    }
+    .portfolio-hero-image {
+        width: 100%;
+        max-width: 500px;
+        height: auto;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        object-fit: cover;
+    }
+    .portfolio-hero h1 {
+        color: var(--accent);
+        font-family: 'Playfair Display', serif;
+        font-size: 4rem;
+        margin-bottom: 0.5rem;
+    }
+    .portfolio-hero h2 {
+        color: var(--text-primary);
+        font-size: 1.2rem;
+        margin-bottom: 1.5rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+    }
+    .portfolio-hero p {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+    .about-image {
+        flex: 0 0 400px;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        object-fit: cover;
+        width: 100%;
+        height: 500px;
+        border: 1px solid var(--glass-border);
+    }
+    .about-text {
+        flex: 1;
+        font-size: 1.1rem;
+        line-height: 1.8;
+        color: var(--text-secondary);
+        white-space: pre-wrap;
+    }
+
+    /* Certificações */
+    .cert-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 2rem;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    .cert-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        overflow: hidden;
+        transition: transform 0.3s;
+    }
+    .cert-card:hover {
+        transform: translateY(-5px);
+    }
+    .cert-image {
+        width: 100%;
+        height: 250px;
+        object-fit: contain;
+        background: rgba(0,0,0,0.5);
+        border-bottom: 1px solid var(--glass-border);
+    }
+    .cert-title {
+        padding: 1.5rem;
+        text-align: center;
+        color: var(--text-primary);
+        font-size: 1.1rem;
+    }
+
+    @media (max-width: 768px) {
+        .portfolio-hero {
+            flex-direction: column-reverse;
+            padding: 2rem 1rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            gap: 1.5rem;
+        }
+        .portfolio-hero-content {
+            text-align: center;
+            padding: 1rem 0;
+        }
+        .portfolio-hero h1 {
+            font-size: 2.5rem;
+        }
+        .portfolio-hero h2 {
+            font-size: 1rem;
+        }
+        .main-tabs {
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .main-tab-btn {
+            font-size: 1rem;
+        }
+        .about-layout {
+            flex-direction: column;
+            gap: 2rem;
+        }
+        .about-image {
+            flex: 0 0 auto;
+            height: auto;
+            max-height: 400px;
+        }
+        .lightbox-nav {
+            font-size: 2rem;
+            padding: 0.5rem;
+        }
+        .lightbox-prev { left: 0px; }
+        .lightbox-next { right: 0px; }
+        .lightbox-content {
+            max-width: 95%;
+            margin-top: 2rem;
+        }
+        .lightbox-image-container {
+            width: 100%;
+            height: 55vh;
+        }
+        .lightbox-image {
+            object-fit: contain !important;
+        }
+    }
+
+    /* Lightbox Styles */
+    .lightbox-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.95);
+        backdrop-filter: blur(10px);
+        z-index: 3000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    .lightbox-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    .lightbox-content {
+        max-width: 90%;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+    }
+    .lightbox-image-container {
+        position: relative;
+        height: 65vh;
+        width: calc(65vh * 0.8); /* Proporção 4:5 (vertical) */
+        max-width: 90vw;
+        display: flex;
+        justify-content: center;
+    }
+    .lightbox-image {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        border-radius: 8px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .lightbox-info {
+        text-align: center;
+        margin-top: 1.5rem;
+        max-width: 600px;
+    }
+    .lightbox-title {
+        color: var(--accent);
+        font-family: 'Playfair Display', serif;
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    .lightbox-desc {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+    
+    /* Controls */
+    .lightbox-close {
+        position: fixed;
+        top: 20px;
+        right: 30px;
+        color: #fff;
+        cursor: pointer;
+        transition: color 0.3s;
+        z-index: 3010;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .lightbox-close svg {
+        width: 36px;
+        height: 36px;
+    }
+    .lightbox-close:hover {
+        color: var(--accent);
+    }
+    .lightbox-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #fff;
+        font-size: 3rem;
+        cursor: pointer;
+        padding: 1rem;
+        transition: color 0.3s;
+        user-select: none;
+    }
+    .lightbox-nav:hover {
+        color: var(--accent);
+    }
+    .lightbox-prev {
+        left: -80px;
+    }
+    .lightbox-next {
+        right: -80px;
+    }
+    
+    /* Animations */
+    @keyframes filterAnim {
+        0% {
+            opacity: 0;
+            transform: scale(0.8) translateY(20px);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+    .work-item.animate {
+        opacity: 0; /* starts hidden before animation kicks in */
+        animation: filterAnim 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+</style>
+
+<div class="container">
+    <!-- HERO SECTION -->
+    <section class="portfolio-hero">
+        <div class="portfolio-hero-content">
+            <h1>Studio Ink</h1>
+            <h2>{{ artist_profile.name|default:"Tatuador Especialista" }}</h2>
+            <p>
+                {% if artist_profile and artist_profile.bio %}
+                    {{ artist_profile.bio|truncatechars:180 }}
+                {% else %}
+                    Transformando ideias em arte marcante. Cada detalhe é pensado para eternizar sua essência e contar a sua história através da tatuagem.
+                {% endif %}
+            </p>
+        </div>
+        <div class="portfolio-hero-image-wrapper">
+            <img src="/static/images/hero_bg.jpg" alt="Hero Image" class="portfolio-hero-image">
+        </div>
+    </section>
+
+    <div class="main-tabs">
+        <button class="main-tab-btn active" data-target="section-works">Trabalhos</button>
+        <button class="main-tab-btn" data-target="section-about">Sobre Mim</button>
+        <button class="main-tab-btn" data-target="section-certs">Certificações</button>
+    </div>
+
+    <!-- SEÇÃO: TRABALHOS -->
+    <div id="section-works" class="main-section active">
+        <div class="filter-controls">
+        <button class="btn-filter active" onclick="filterGallery('all', this)">Todos</button>
+        <button class="btn-filter" onclick="filterGallery('tattoo', this)">Tatuagens</button>
+        <button class="btn-filter" onclick="filterGallery('piercing', this)">Piercings</button>
+    </div>
+
+    <section class="gallery-grid" id="gallery-container">
+        {% if works %}
+            {% for work in works %}
+            <article class="tattoo-card work-item" data-category="{{ work.category }}" onclick="openLightbox(this)" style="cursor: pointer;">
+                <div class="tattoo-image-wrapper">
+                    {% if work.image %}
+                    <img src="{{ work.image.url }}" alt="{{ work.title }}" class="tattoo-image">
+                    {% else %}
+                    <img src="https://via.placeholder.com/400x500/191a20/e2e8f0?text=Sem+Imagem" alt="Sem Imagem" class="tattoo-image">
+                    {% endif %}
+                </div>
+                <div class="tattoo-info">
+                    <h3 class="tattoo-title">{{ work.title }}</h3>
+                    {% if work.description %}
+                    <p class="tattoo-desc">{{ work.description|truncatechars:100 }}</p>
+                    {% endif %}
+                    
+                    <span style="display:none;" class="full-desc">{{ work.description|default:'' }}</span>
+                    <span style="display:none;" class="full-img">{% if work.image %}{{ work.image.url }}{% else %}https://via.placeholder.com/400x500/191a20/e2e8f0?text=Sem+Imagem{% endif %}</span>
+                </div>
+            </article>
+            {% endfor %}
+        {% else %}
+            <div class="empty-gallery">
+                <h3>Nenhum trabalho no portfólio ainda.</h3>
+                <p>Volte em breve para ver nossas novas artes.</p>
+            </div>
+        {% endif %}
+        </section>
+    </div>
+
+    <!-- SEÇÃO: SOBRE MIM -->
+    <div id="section-about" class="main-section">
+        {% if artist_profile %}
+            <div class="about-layout">
+                {% if artist_profile.profile_image %}
+                <img src="{{ artist_profile.profile_image.url }}" alt="{{ artist_profile.name }}" class="about-image">
+                {% else %}
+                <div class="about-image" style="background: var(--glass-border); display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">Sem foto de perfil</div>
+                {% endif %}
+                <div class="about-text">
+                    <h2 style="color: var(--accent); font-family: 'Playfair Display', serif; font-size: 2.5rem; margin-bottom: 1.5rem;">{{ artist_profile.name }}</h2>
+                    <p>{{ artist_profile.bio }}</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="empty-gallery">
+                <h3>Perfil ainda não configurado.</h3>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- SEÇÃO: CERTIFICAÇÕES -->
+    <div id="section-certs" class="main-section">
+        {% if certifications %}
+            <div class="cert-grid">
+                {% for cert in certifications %}
+                <div class="cert-card">
+                    <img src="{{ cert.image.url }}" alt="{{ cert.title }}" class="cert-image">
+                    <div class="cert-title">{{ cert.title }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-gallery">
+                <h3>Nenhuma certificação cadastrada ainda.</h3>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- SEÇÃO: CONTATO -->
+    <section class="contact-section" id="section-contact">
+        <div class="contact-header">
+            <span class="contact-subtitle">— VAMOS CONVERSAR</span>
+            <h2 class="contact-title">BORA MANDAR AQUELA TATTOO NOVA?</h2>
+            <div class="contact-divider"></div>
+            <p class="contact-desc">MANDA UMA MENSAGEM PRA GENTE OU AGENDE SEU HORÁRIO AQUI PELO SITE.</p>
+        </div>
+        
+        <div class="contact-actions">
+            <a href="#" class="btn-ghost" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                WHATSAPP
+            </a>
+            <a href="#" class="btn-ghost" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                INSTAGRAM
+            </a>
+            <a href="#" class="btn-ghost">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                E-MAIL
+            </a>
+        </div>
+        
+        <div class="contact-primary-action">
+            <a href="{% url 'scheduling:request' %}" class="btn-primary" style="display: inline-block; padding: 1rem 3rem; font-size: 1.1rem;">AGENDAR SESSÃO</a>
+        </div>
+    </section>
+</div>
+
+<!-- Lightbox Modal -->
+<div id="lightbox" class="lightbox-overlay" onclick="handleOverlayClick(event)">
+    <div class="lightbox-close" onclick="closeLightbox()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+    </div>
+    
+    <div class="lightbox-content">
+        <div class="lightbox-nav lightbox-prev" onclick="prevImage()">&#10094;</div>
+        
+        <div class="lightbox-image-container">
+            <img id="lb-image" src="" class="lightbox-image" alt="Arte">
+        </div>
+        
+        <div class="lightbox-nav lightbox-next" onclick="nextImage()">&#10095;</div>
+        
+        <div class="lightbox-info">
+            <h3 id="lb-title" class="lightbox-title"></h3>
+            <p id="lb-desc" class="lightbox-desc"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentFilteredItems = [];
+    let currentIndex = 0;
+    
+    const lightbox = document.getElementById('lightbox');
+    const lbImage = document.getElementById('lb-image');
+    const lbTitle = document.getElementById('lb-title');
+    const lbDesc = document.getElementById('lb-desc');
+    
+    // Mover o lightbox para o final do body para evitar bugs com position: fixed e transform/animation no main
+    if (lightbox) {
+        document.body.appendChild(lightbox);
+    }
+
+    // Inicializar galeria
+    function initGallery() {
+        const items = document.querySelectorAll('.work-item');
+        currentFilteredItems = Array.from(items);
+
+        // Configurar abas principais
+        const mainBtns = document.querySelectorAll('.main-tab-btn');
+        const mainSections = document.querySelectorAll('.main-section');
+        
+        mainBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                mainBtns.forEach(b => b.classList.remove('active'));
+                mainSections.forEach(s => s.classList.remove('active'));
+                
+                this.classList.add('active');
+                const targetId = this.getAttribute('data-target');
+                document.getElementById(targetId).classList.add('active');
+            });
+        });
+    }
+    
+    window.addEventListener('DOMContentLoaded', initGallery);
+
+    function filterGallery(category, btnElement) {
+        // Update active button
+        document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+
+        // Filter items
+        const allItems = document.querySelectorAll('.work-item');
+        currentFilteredItems = [];
+        
+        // Remove animation class and hide items momentarily
+        allItems.forEach(item => {
+            item.classList.remove('animate');
+            item.style.animationDelay = '0s';
+        });
+        
+        // Force reflow to restart animation
+        void document.body.offsetWidth;
+        
+        let delay = 0;
+        allItems.forEach(item => {
+            if (category === 'all' || item.dataset.category === category) {
+                item.style.display = 'block';
+                item.style.animationDelay = `${delay * 0.05}s`;
+                item.classList.add('animate');
+                currentFilteredItems.push(item);
+                delay++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    let savedScrollY = 0;
+
+    function openLightbox(element) {
+        if (currentFilteredItems.length === 0) return;
+        
+        // Find index of clicked element in currently filtered items
+        currentIndex = currentFilteredItems.indexOf(element);
+        
+        updateLightboxContent();
+        lightbox.classList.add('active');
+        
+        // Save scroll position and fix body to prevent scrolling without jumping
+        savedScrollY = window.scrollY;
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${savedScrollY}px`;
+        document.body.style.width = '100%';
+    }
+
+    function closeLightbox() {
+        lightbox.classList.remove('active');
+        
+        // Restore body position and scroll back to where we were
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        window.scrollTo(0, savedScrollY);
+    }
+
+    function updateLightboxContent() {
+        if (currentIndex < 0 || currentIndex >= currentFilteredItems.length) return;
+        
+        const item = currentFilteredItems[currentIndex];
+        const title = item.querySelector('.tattoo-title').textContent;
+        const desc = item.querySelector('.full-desc').textContent;
+        const imgSrc = item.querySelector('.full-img').textContent;
+        
+        lbImage.src = imgSrc;
+        lbTitle.textContent = title;
+        lbDesc.textContent = desc;
+    }
+
+    function nextImage() {
+        if (currentFilteredItems.length <= 1) return;
+        currentIndex = (currentIndex + 1) % currentFilteredItems.length;
+        updateLightboxContent();
+    }
+
+    function prevImage() {
+        if (currentFilteredItems.length <= 1) return;
+        currentIndex = (currentIndex - 1 + currentFilteredItems.length) % currentFilteredItems.length;
+        updateLightboxContent();
+    }
+
+    function handleOverlayClick(event) {
+        if (event.target === lightbox) {
+            closeLightbox();
+        }
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(event) {
+        if (!lightbox.classList.contains('active')) return;
+        
+        if (event.key === 'Escape') {
+            closeLightbox();
+        } else if (event.key === 'ArrowRight') {
+            nextImage();
+        } else if (event.key === 'ArrowLeft') {
+            prevImage();
+        }
+    });
+</script>
+
+{% endblock %}

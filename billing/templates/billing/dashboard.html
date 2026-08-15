@@ -1,0 +1,1011 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Painel do Estúdio - Ink Studio{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/cropper.min.css' %}" />
+<script src="{% static 'js/cropper.min.js' %}"></script>
+<style>
+    .dashboard-layout {
+        display: flex;
+        gap: 2rem;
+        min-height: 80vh;
+        align-items: flex-start;
+    }
+    .sidebar {
+        width: 250px;
+        flex-shrink: 0;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 1.5rem 1rem;
+        position: sticky;
+        top: 100px;
+    }
+    .sidebar-menu {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .tab-btn {
+        width: 100%;
+        text-align: left;
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        padding: 1rem;
+        font-family: 'Outfit', sans-serif;
+        font-size: 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .tab-btn:hover {
+        background: rgba(255,255,255,0.05);
+        color: var(--text-primary);
+    }
+    .tab-btn.active {
+        background: rgba(212,175,55,0.1);
+        color: var(--accent);
+        font-weight: 600;
+        border-left: 3px solid var(--accent);
+    }
+    .main-content {
+        flex-grow: 1;
+        max-width: calc(100% - 250px - 2rem);
+    }
+    .tab-content {
+        display: none;
+        animation: fadeIn 0.4s ease;
+    }
+    .tab-content.active {
+        display: block;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Table styles */
+    .appt-table {
+        width: 100%;
+        min-width: 600px;
+        text-align: left;
+        border-collapse: collapse;
+    }
+    .appt-table th {
+        padding: 1.2rem;
+        border-bottom: 1px solid var(--glass-border);
+        background: rgba(0,0,0,0.4);
+        color: var(--text-secondary);
+        font-weight: 600;
+    }
+    .appt-table td {
+        padding: 1.2rem;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .appt-row:hover {
+        background: rgba(212,175,55,0.05);
+    }
+    
+    @media (max-width: 768px) {
+        .dashboard-layout {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .sidebar {
+            width: 100%;
+            position: relative;
+            top: 0;
+            padding: 1rem;
+        }
+        .sidebar-menu {
+            flex-direction: row;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 0.5rem;
+        }
+        .sidebar-menu::-webkit-scrollbar {
+            height: 6px;
+        }
+        .sidebar-menu::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 3px;
+        }
+        .tab-btn {
+            text-align: center;
+            padding: 0.8rem 1rem;
+            border-left: none;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-btn.active {
+            border-left: none;
+            border-bottom: 3px solid var(--accent);
+        }
+        .main-content {
+            width: 100%;
+            max-width: 100%;
+        }
+        .form-grid-3, .form-grid-2 {
+            grid-template-columns: 1fr !important;
+        }
+        .profile-flex {
+            flex-direction: column;
+            align-items: center;
+        }
+        .profile-flex > div:first-child {
+            width: 100%;
+        }
+    }
+    
+    /* Modal Styles (For Cropper) */
+    .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.8);
+        backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        visibility: hidden;
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+    .modal-overlay.active {
+        visibility: visible;
+        opacity: 1;
+    }
+    .modal-content-box {
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+        max-width: 800px;
+        width: 90%;
+        margin: 0;
+        padding: 2.5rem;
+    }
+    .modal-overlay.active .modal-content-box {
+        transform: scale(1);
+    }
+    
+    /* Styling select options for better dark theme integration */
+    select.form-input option {
+        background-color: #090a0c;
+        color: #f8fafc;
+        padding: 10px;
+    }
+    select.form-input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+        outline: none;
+        border-bottom-left-radius: 0px;
+        border-bottom-right-radius: 0px;
+    }
+</style>
+
+<div class="container dashboard-layout">
+    
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <h3 style="color: var(--text-primary); margin-bottom: 1.5rem; padding-left: 1rem; font-family: 'Playfair Display', serif;">Menu</h2>
+        <ul class="sidebar-menu">
+            <li><button class="tab-btn active" data-target="tab-visao">Visão Geral</button></li>
+            <li><button class="tab-btn" data-target="tab-agendamentos">Todos os Agendamentos</button></li>
+            <li><button class="tab-btn" data-target="tab-financeiro">Resumo Financeiro</button></li>
+            <li><button class="tab-btn" data-target="tab-portfolio">Gerenciar Trabalhos</button></li>
+            <li><button class="tab-btn" data-target="tab-perfil">Gerenciar Perfil</button></li>
+        </ul>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+                <h2 class="form-title" style="margin: 0; text-align: left;" id="page-title">Visão Geral</h2>
+                <p style="color: var(--text-secondary); margin-top: 0.5rem;" id="page-subtitle">O que você precisa saber agora.</p>
+            </div>
+        </div>
+
+        <!-- ABA: VISÃO GERAL -->
+        <div id="tab-visao" class="tab-content active">
+            
+            <div class="gallery-grid" style="margin-bottom: 2rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">Faturamento Mensal</p>
+                    <h3 style="color: var(--accent); font-size: 2rem; font-family: 'Playfair Display', serif;">R$ {{ total_revenue }}</h3>
+                </div>
+                <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">Tatuagens Concluídas</p>
+                    <h3 style="color: var(--accent); font-size: 2rem; font-family: 'Playfair Display', serif;">{{ total_tattoos }}</h3>
+                </div>
+            </div>
+
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem; font-family: 'Playfair Display', serif; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">Agendamentos de Hoje</h3>
+            {% if appointments_hoje %}
+                <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; overflow-x: auto; margin-bottom: 2rem;">
+                    <table class="appt-table">
+                        <thead><tr><th>Hora</th><th>Cliente</th><th>Contato</th><th>Status</th><th>Ação</th></tr></thead>
+                        <tbody>
+                            {% for appt in appointments_hoje %}
+                            <tr class="appt-row">
+                                <td style="color: var(--accent); font-weight: 600;">{{ appt.date_time|time:"H:i" }}</td>
+                                <td>{{ appt.client.name }}</td>
+                                <td style="color: var(--text-secondary); font-size: 0.9rem;">{{ appt.client.phone }}</td>
+                                <td>
+                                    {% if appt.status == 'PENDING' %}
+                                        <span style="background: rgba(255,165,0,0.1); border: 1px solid rgba(255,165,0,0.3); color: orange; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Pendente</span>
+                                    {% elif appt.status == 'CONFIRMED' %}
+                                        <span style="background: rgba(0,255,0,0.05); border: 1px solid rgba(0,255,0,0.2); color: #4ade80; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Confirmado</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="javascript:void(0);" 
+                                       onclick="openManageTab(this)"
+                                       data-id="{{ appt.id }}"
+                                       data-client="{{ appt.client.name }}"
+                                       data-status="{{ appt.status }}"
+                                       data-price="{{ appt.estimated_price|default_if_none:'' }}"
+                                       data-desc="{{ appt.description }}"
+                                       data-image="{% if appt.reference_image %}{{ appt.reference_image.url }}{% endif %}"
+                                       style="color: var(--accent); text-decoration: none;">Gerenciar &rarr;</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p style="color: var(--text-secondary); margin-bottom: 2rem;">Nenhum agendamento para hoje.</p>
+            {% endif %}
+
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem; font-family: 'Playfair Display', serif; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">Agendamentos de Amanhã</h3>
+            {% if appointments_amanha %}
+                <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; overflow-x: auto; margin-bottom: 2rem;">
+                    <table class="appt-table">
+                        <thead><tr><th>Hora</th><th>Cliente</th><th>Contato</th><th>Status</th><th>Ação</th></tr></thead>
+                        <tbody>
+                            {% for appt in appointments_amanha %}
+                            <tr class="appt-row">
+                                <td style="color: var(--accent); font-weight: 600;">{{ appt.date_time|time:"H:i" }}</td>
+                                <td>{{ appt.client.name }}</td>
+                                <td style="color: var(--text-secondary); font-size: 0.9rem;">{{ appt.client.phone }}</td>
+                                <td>
+                                    {% if appt.status == 'PENDING' %}
+                                        <span style="background: rgba(255,165,0,0.1); border: 1px solid rgba(255,165,0,0.3); color: orange; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Pendente</span>
+                                    {% elif appt.status == 'CONFIRMED' %}
+                                        <span style="background: rgba(0,255,0,0.05); border: 1px solid rgba(0,255,0,0.2); color: #4ade80; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Confirmado</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="javascript:void(0);" 
+                                       onclick="openManageTab(this)"
+                                       data-id="{{ appt.id }}"
+                                       data-client="{{ appt.client.name }}"
+                                       data-status="{{ appt.status }}"
+                                       data-price="{{ appt.estimated_price|default_if_none:'' }}"
+                                       data-desc="{{ appt.description }}"
+                                       data-image="{% if appt.reference_image %}{{ appt.reference_image.url }}{% endif %}"
+                                       style="color: var(--accent); text-decoration: none;">Gerenciar &rarr;</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p style="color: var(--text-secondary); margin-bottom: 2rem;">Nenhum agendamento para amanhã.</p>
+            {% endif %}
+        </div>
+
+        <!-- ABA: TODOS OS AGENDAMENTOS -->
+        <div id="tab-agendamentos" class="tab-content">
+            {% if upcoming_appointments %}
+                <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; overflow-x: auto; margin-bottom: 2rem;">
+                    <table class="appt-table">
+                        <thead>
+                            <tr>
+                                <th>Data / Hora</th>
+                                <th>Cliente</th>
+                                <th>Contato</th>
+                                <th>Status</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appt in upcoming_appointments %}
+                            <tr class="appt-row">
+                                <td style="color: var(--accent); font-weight: 600;">
+                                    {{ appt.date_time|date:"d/m/Y" }}<br>
+                                    <span style="color: var(--text-primary); font-size: 0.9rem;">{{ appt.date_time|time:"H:i" }}</span>
+                                </td>
+                                <td>
+                                    {{ appt.client.name }}<br>
+                                    {% if appt.client.instagram_handle %}
+                                    <span style="color: var(--text-secondary); font-size: 0.85rem;">{{ appt.client.instagram_handle }}</span>
+                                    {% endif %}
+                                </td>
+                                <td style="color: var(--text-secondary); font-size: 0.9rem;">
+                                    {{ appt.client.phone }}
+                                </td>
+                                <td>
+                                    {% if appt.status == 'PENDING' %}
+                                        <span style="background: rgba(255,165,0,0.1); border: 1px solid rgba(255,165,0,0.3); color: orange; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Pendente</span>
+                                    {% elif appt.status == 'CONFIRMED' %}
+                                        <span style="background: rgba(0,255,0,0.05); border: 1px solid rgba(0,255,0,0.2); color: #4ade80; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Confirmado</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="javascript:void(0);" 
+                                       onclick="openManageTab(this)"
+                                       data-id="{{ appt.id }}"
+                                       data-client="{{ appt.client.name }}"
+                                       data-status="{{ appt.status }}"
+                                       data-price="{{ appt.estimated_price|default_if_none:'' }}"
+                                       data-desc="{{ appt.description }}"
+                                       data-image="{% if appt.reference_image %}{{ appt.reference_image.url }}{% endif %}"
+                                       style="color: var(--accent); text-decoration: none;">Gerenciar &rarr;</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; text-align: center; padding: 3rem;">
+                    <p style="color: var(--text-secondary); margin: 0;">Nenhum agendamento pendente ou futuro.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- ABA: FINANCEIRO -->
+        <div id="tab-financeiro" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h3 style="color: var(--text-primary); margin: 0; font-family: 'Playfair Display', serif;">Faturamento: {{ period_label }}</h3>
+                <select id="finance-period-select" class="form-input" style="width: auto; padding: 0.5rem 1rem;" onchange="window.location.search = '?period=' + this.value">
+                    <option value="day" {% if selected_period == 'day' %}selected{% endif %}>Hoje</option>
+                    <option value="week" {% if selected_period == 'week' %}selected{% endif %}>Últimos 7 Dias</option>
+                    <option value="month" {% if selected_period == 'month' %}selected{% endif %}>Este Mês</option>
+                    <option value="year" {% if selected_period == 'year' %}selected{% endif %}>Este Ano</option>
+                </select>
+            </div>
+
+            <div class="gallery-grid" style="margin-bottom: 2rem;">
+                <div class="form-container" style="margin: 0; padding: 2.5rem; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+                    <h4 style="color: var(--text-secondary); margin-bottom: 1rem; font-weight: 400;">Faturamento Total</h4>
+                    <div style="font-size: 3.5rem; color: var(--accent); font-weight: 800; font-family: 'Playfair Display', serif; line-height: 1;">
+                        R$ {{ total_revenue }}
+                    </div>
+                    <p style="color: var(--text-secondary); margin-top: 1.5rem; font-size: 0.95rem;">Total de <strong style="color: var(--text-primary);">{{ total_tattoos }}</strong> tatuagens concluídas.</p>
+                </div>
+        
+                <div class="form-container" style="margin: 0; padding: 1.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <h4 style="color: var(--text-secondary); margin-bottom: 1rem; text-align: center; font-weight: 400;">Por Forma de Pagamento</h4>
+                    {% if payment_breakdown %}
+                        <div style="width: 100%; max-width: 250px;">
+                            <canvas id="paymentPieChart"></canvas>
+                        </div>
+                    {% else %}
+                        <p style="text-align: center; color: var(--text-secondary); margin-top: 2rem;">Nenhum pagamento registrado.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-container" style="margin: 0 0 2rem 0; padding: 2rem;">
+                <h4 style="color: var(--text-secondary); margin-bottom: 1.5rem; text-align: center; font-weight: 400;">Evolução do Faturamento</h4>
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="revenueLineChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ABA: GERENCIAR TRABALHOS -->
+        <div id="tab-portfolio" class="tab-content">
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem; font-family: 'Playfair Display', serif; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">Novo Trabalho</h3>
+            <div class="form-container" style="max-width: 100%; margin: 0 0 2rem 0; padding: 2rem;">
+                <form method="POST" action="{% url 'billing:manage_portfolio' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add">
+                    <div class="form-grid-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                        <div class="form-group" style="margin: 0;">
+                            <label>Título*</label>
+                            <input type="text" name="title" class="form-input" required placeholder="Ex: Dragão Oriental">
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label>Categoria*</label>
+                            <select name="category" class="form-input" required>
+                                <option value="tattoo">Tatuagem</option>
+                                <option value="piercing">Piercing</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label>Imagem*</label>
+                            <input type="file" name="image" id="portfolio-image-upload" class="file-input" required accept="image/*">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Descrição (Opcional)</label>
+                        <textarea name="description" class="form-input" rows="3" placeholder="Detalhes sobre o trabalho..."></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary" style="border: none; font-size: 1rem; width: 100%;">Adicionar Trabalho</button>
+                </form>
+            </div>
+
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem; font-family: 'Playfair Display', serif; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">Trabalhos Atuais</h3>
+            <div class="gallery-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+                {% for work in portfolio_works %}
+                    <div class="tattoo-card" onclick="openPortfolioDetailsTab('{{ work.id }}', '{{ work.title|escapejs }}', '{{ work.description|escapejs }}', '{{ work.image.url }}')" style="cursor: pointer; position: relative;">
+                        <div class="tattoo-image-wrapper" style="height: 200px;">
+                            <img src="{{ work.image.url }}" alt="{{ work.title }}" class="tattoo-image">
+                            <span style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: var(--accent); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; backdrop-filter: blur(4px);">
+                                {% if work.category == 'tattoo' %}Tatuagem{% else %}Piercing{% endif %}
+                            </span>
+                        </div>
+                        <div class="tattoo-info" style="padding: 1rem;">
+                            <h4 style="font-size: 1rem; margin-bottom: 0;">{{ work.title }}</h4>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p style="color: var(--text-secondary); grid-column: 1 / -1; padding: 2rem; border: 1px dashed var(--glass-border); border-radius: 8px; text-align: center;">Nenhum trabalho cadastrado ainda.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- ABA: DETALHES DO TRABALHO -->
+        <div id="tab-portfolio-details" class="tab-content">
+            <div class="form-container" style="max-width: 800px; margin: 0 auto; padding: 2.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <div>
+                        <p class="form-subtitle" style="margin-bottom: 0.5rem; color: var(--accent);">Detalhes do Trabalho</p>
+                        <h3 id="portfolio-title" style="font-size: 2rem; color: var(--text-primary); font-family: 'Playfair Display', serif; margin: 0;">Título</h3>
+                    </div>
+                    <button type="button" class="btn-secondary" onclick="closePortfolioDetailsTab()">Voltar</button>
+                </div>
+
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <a id="portfolio-image-link" href="#" target="_blank">
+                        <img id="portfolio-image" src="" alt="Arte" style="max-width: 100%; max-height: 400px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">
+                    </a>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; border: 1px solid var(--glass-border);">
+                    <h5 style="color: var(--accent); margin-bottom: 0.5rem; font-family: 'Playfair Display', serif; font-size: 1.1rem;">Descrição</h5>
+                    <p id="portfolio-desc" style="color: var(--text-secondary); font-size: 1rem; line-height: 1.6; white-space: pre-wrap;"></p>
+                </div>
+
+                <form method="POST" action="{% url 'billing:manage_portfolio' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="tattoo_id" id="portfolio-id">
+                    
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button type="button" class="btn-secondary" style="flex: 1; padding: 1.2rem;" onclick="closePortfolioDetailsTab()">Cancelar e Voltar</button>
+                        <button type="submit" class="btn-primary" style="flex: 1; border: none; font-size: 1.1rem; padding: 1.2rem; background: #ef4444; color: white !important; box-shadow: 0 4px 15px rgba(239,68,68,0.3);" onclick="return confirm('Tem certeza que deseja deletar este trabalho do portfólio público?')">Deletar Trabalho</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ABA: GERENCIAR AGENDAMENTO -->
+        <div id="tab-gerenciar" class="tab-content">
+            <div class="form-container" style="max-width: 800px; margin: 0 auto; padding: 2.5rem;">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <div>
+                        <p class="form-subtitle" style="margin-bottom: 0.5rem; color: var(--accent);">Cliente</p>
+                        <h3 id="manage-client-name" style="font-size: 2rem; color: var(--text-primary); font-family: 'Playfair Display', serif; margin: 0;">Nome</h3>
+                    </div>
+                    <button type="button" class="btn-secondary" onclick="closeManageTab()">Voltar</button>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.02); padding: 2rem; border-radius: 12px; margin-bottom: 2rem; border: 1px solid var(--glass-border);">
+                    <h5 style="color: var(--accent); margin-bottom: 1rem; font-family: 'Playfair Display', serif; font-size: 1.2rem;">Ideia da Tatuagem</h5>
+                    <p id="manage-desc" style="color: var(--text-secondary); font-size: 1.05rem; line-height: 1.6; margin-bottom: 1rem; white-space: pre-wrap;"></p>
+                    
+                    <div id="manage-image-container" style="display: none; text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">Imagem de Referência:</p>
+                        <a id="manage-image-link" href="#" target="_blank">
+                            <img id="manage-image" src="" alt="Referência" style="max-width: 100%; max-height: 350px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">
+                        </a>
+                        <p style="font-size: 0.85rem; color: var(--accent); margin-top: 0.8rem; opacity: 0.8;">Clique na imagem para abrir no tamanho original</p>
+                    </div>
+                </div>
+                
+                <form method="POST" id="manageForm">
+                    {% csrf_token %}
+                    <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                        <div class="form-group" style="margin: 0;">
+                            <label>Status do Agendamento</label>
+                            <select name="status" id="manage-status" class="form-input" onchange="checkStatusCompleted(this.value)">
+                                <option value="PENDING">Pendente (Aguardando Aprovação)</option>
+                                <option value="CONFIRMED">Confirmado</option>
+                                <option value="COMPLETED">Concluído (Gerar Faturamento)</option>
+                                <option value="CANCELLED">Cancelado</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" style="margin: 0;">
+                            <label>Preço Estimado (R$)</label>
+                            <input type="number" step="0.01" name="estimated_price" id="manage-price" class="form-input" placeholder="0.00">
+                        </div>
+                    </div>
+                    
+                    <div id="billing-fields" style="display: none; padding-top: 1.5rem; border-top: 1px dashed var(--glass-border); margin-top: 1.5rem;">
+                        <h4 style="color: var(--accent); margin-bottom: 1.5rem; font-family: 'Playfair Display', serif; font-size: 1.4rem;">Faturamento Oficial</h4>
+                        <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                            <div class="form-group">
+                                <label>Preço Final Cobrado (R$)*</label>
+                                <input type="number" step="0.01" name="final_price" id="manage-final-price" class="form-input" placeholder="0.00">
+                            </div>
+                            <div class="form-group">
+                                <label>Forma de Pagamento*</label>
+                                <select name="payment_method" id="manage-payment-method" class="form-input">
+                                    <option value="PIX">PIX</option>
+                                    <option value="CREDIT">Cartão de Crédito</option>
+                                    <option value="DEBIT">Cartão de Débito</option>
+                                    <option value="CASH">Dinheiro</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button type="button" class="btn-secondary" style="flex: 1; padding: 1.2rem;" onclick="closeManageTab()">Cancelar e Voltar</button>
+                        <button type="submit" class="btn-primary" style="flex: 2; border: none; font-size: 1.1rem; padding: 1.2rem;">Salvar Alterações</button>
+                        <a id="manage-pdf-link" href="#" target="_blank" class="btn-secondary" style="flex: 1; padding: 1.2rem; text-decoration: none; text-align: center; display: inline-flex; justify-content: center; align-items: center; background: rgba(212,175,55,0.1); color: var(--accent); border: 1px solid var(--accent); border-radius: 8px; font-weight: 600; box-sizing: border-box;">🖨️ Imprimir Termo</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ABA: GERENCIAR PERFIL -->
+        <div id="tab-perfil" class="tab-content">
+            <!-- SOBRE MIM -->
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem; font-family: 'Playfair Display', serif; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">Sobre Mim</h3>
+            <div class="form-container" style="max-width: 100%; margin: 0 0 2rem 0; padding: 2rem;">
+                <form method="POST" action="{% url 'billing:manage_profile' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_profile">
+                    
+                    <div class="profile-flex" style="display: flex; gap: 2rem; align-items: flex-start; margin-bottom: 1.5rem;">
+                        <div style="flex: 1;">
+                            <div class="form-group" style="margin-bottom: 1.5rem;">
+                                <label>Nome Artístico*</label>
+                                <input type="text" name="name" class="form-input" required value="{{ artist_profile.name|default:'' }}" placeholder="Seu nome artístico">
+                            </div>
+                            <div class="form-group">
+                                <label>Foto de Perfil (Opcional se já existir)</label>
+                                <input type="file" name="profile_image" class="file-input" accept="image/*">
+                            </div>
+                        </div>
+                        <div style="flex: 0 0 150px; text-align: center;">
+                            {% if artist_profile and artist_profile.profile_image %}
+                            <img src="{{ artist_profile.profile_image.url }}" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 2px solid var(--glass-border);">
+                            <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.5rem;">Foto Atual</p>
+                            {% else %}
+                            <div style="width: 150px; height: 150px; border-radius: 50%; background: var(--glass-border); display: flex; align-items: center; justify-content: center; color: var(--text-secondary);">Sem Foto</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Biografia*</label>
+                        <textarea name="bio" class="form-input" rows="6" required placeholder="Conte um pouco sobre sua trajetória, estilo de tatuagem, há quanto tempo atua...">{{ artist_profile.bio|default:'' }}</textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary" style="border: none; font-size: 1rem;">Salvar Perfil</button>
+                </form>
+            </div>
+
+            <!-- CERTIFICAÇÕES -->
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem; margin-top: 3rem; font-family: 'Playfair Display', serif; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">Nova Certificação</h3>
+            <div class="form-container" style="max-width: 100%; margin: 0 0 2rem 0; padding: 2rem;">
+                <form method="POST" action="{% url 'billing:manage_profile' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_cert">
+                    <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                        <div class="form-group" style="margin: 0;">
+                            <label>Título do Certificado/Diploma*</label>
+                            <input type="text" name="title" class="form-input" required placeholder="Ex: Masterclass Realismo Preto e Cinza">
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label>Imagem (Foto do Certificado)*</label>
+                            <input type="file" name="image" class="file-input" required accept="image/*">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary" style="border: none; font-size: 1rem;">Adicionar Certificação</button>
+                </form>
+            </div>
+
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem; font-family: 'Playfair Display', serif; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">Certificações Atuais</h3>
+            <div class="gallery-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+                {% for cert in certifications %}
+                    <div class="tattoo-card" style="position: relative;">
+                        <div class="tattoo-image-wrapper" style="height: 150px; background: rgba(0,0,0,0.5);">
+                            <img src="{{ cert.image.url }}" alt="{{ cert.title }}" class="tattoo-image" style="object-fit: contain;">
+                        </div>
+                        <div class="tattoo-info" style="padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                            <h4 style="font-size: 0.9rem; margin-bottom: 0;">{{ cert.title }}</h4>
+                            <form method="POST" action="{% url 'billing:manage_profile' %}" style="margin: 0;" onsubmit="return confirm('Tem certeza que deseja deletar esta certificação?')">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_cert">
+                                <input type="hidden" name="cert_id" value="{{ cert.id }}">
+                                <button type="submit" style="background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 1.2rem;">&times;</button>
+                            </form>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p style="color: var(--text-secondary); grid-column: 1 / -1; padding: 2rem; border: 1px dashed var(--glass-border); border-radius: 8px; text-align: center;">Nenhuma certificação cadastrada.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const titles = {
+        'tab-visao': { title: 'Visão Geral', sub: 'O que você precisa saber agora.' },
+        'tab-agendamentos': { title: 'Todos os Agendamentos', sub: 'Lista completa de pendentes e confirmados futuros.' },
+        'tab-financeiro': { title: 'Resumo Financeiro', sub: 'Acompanhamento do mês atual.' },
+        'tab-portfolio': { title: 'Gerenciar Trabalhos', sub: 'Adicione ou remova itens do portfólio.' },
+        'tab-perfil': { title: 'Perfil do Tatuador', sub: 'Atualize sua biografia e certificações.' }
+    };
+    
+    // Ler tab inicial da hash da URL (se existir) ou do sessionStorage
+    let lastActiveTab = 'tab-visao';
+    if (window.location.hash) {
+        lastActiveTab = window.location.hash.substring(1);
+        // Remove a hash da URL silenciosamente para evitar que o navegador role para o final da página
+        window.history.replaceState(null, null, window.location.pathname + window.location.search);
+        sessionStorage.setItem('lastActiveTab', lastActiveTab);
+    } else {
+        lastActiveTab = sessionStorage.getItem('lastActiveTab') || 'tab-visao';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const buttons = document.querySelectorAll('.tab-btn');
+        const contents = document.querySelectorAll('.tab-content');
+        const pageTitle = document.getElementById('page-title');
+        const pageSubtitle = document.getElementById('page-subtitle');
+
+        buttons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Remove active de todos
+                buttons.forEach(b => b.classList.remove('active'));
+                contents.forEach(c => c.classList.remove('active'));
+                
+                // Add active no clicado
+                this.classList.add('active');
+                
+                // Mostra conteudo respectivo
+                const targetId = this.getAttribute('data-target');
+                document.getElementById(targetId).classList.add('active');
+                
+                // Atualiza titulos
+                if(titles[targetId]) {
+                    pageTitle.textContent = titles[targetId].title;
+                    pageSubtitle.textContent = titles[targetId].sub;
+                }
+
+                // Atualiza a ultima tab clicada
+                lastActiveTab = targetId;
+                sessionStorage.setItem('lastActiveTab', targetId);
+                
+                // Força o scroll pro topo da tela sempre que mudar de aba ou a página carregar
+                window.scrollTo(0, 0);
+            });
+        });
+
+        // Ativar a tab baseada na variável lastActiveTab depois que os eventos foram atrelados
+        const initialTabBtn = document.querySelector(`.tab-btn[data-target="${lastActiveTab}"]`);
+        if(initialTabBtn) {
+            initialTabBtn.click();
+        }
+        
+        // Garante que a página comece no topo (evita scroll indesejado)
+        setTimeout(() => window.scrollTo(0, 0), 10);
+    });
+
+    // Modal Logic => Tab Logic
+    function openManageTab(element) {
+        const id = element.getAttribute('data-id');
+        const client = element.getAttribute('data-client');
+        const status = element.getAttribute('data-status');
+        const price = element.getAttribute('data-price');
+        const desc = element.getAttribute('data-desc');
+        const image = element.getAttribute('data-image');
+        
+        document.getElementById('manageForm').action = `/faturamento/dashboard/manage/${id}/`;
+        document.getElementById('manage-pdf-link').href = `/faturamento/dashboard/consentimento/${id}/`;
+        document.getElementById('manage-client-name').textContent = client;
+        document.getElementById('manage-status').value = status;
+        document.getElementById('manage-price').value = price;
+        document.getElementById('manage-desc').textContent = desc || "Sem descrição preenchida pelo cliente.";
+        
+        const imageContainer = document.getElementById('manage-image-container');
+        const imageEl = document.getElementById('manage-image');
+        const imageLink = document.getElementById('manage-image-link');
+        
+        if (image) {
+            imageEl.src = image;
+            imageLink.href = image;
+            imageContainer.style.display = 'block';
+        } else {
+            imageContainer.style.display = 'none';
+        }
+        
+        checkStatusCompleted(status);
+        
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        
+        // Show manage tab
+        document.getElementById('tab-gerenciar').classList.add('active');
+        
+        // Update page title
+        document.getElementById('page-title').textContent = 'Gerenciando Agendamento';
+        document.getElementById('page-subtitle').textContent = 'Edite os detalhes, status e faturamento.';
+        
+        // Scroll to top
+        window.scrollTo(0,0);
+    }
+    
+    function closeManageTab() {
+        // Volta para a tab anterior
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(lastActiveTab).classList.add('active');
+        
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        const activeBtn = document.querySelector(`.tab-btn[data-target="${lastActiveTab}"]`);
+        if (activeBtn) activeBtn.classList.add('active');
+        
+        if (titles[lastActiveTab]) {
+            document.getElementById('page-title').textContent = titles[lastActiveTab].title;
+            document.getElementById('page-subtitle').textContent = titles[lastActiveTab].sub;
+        }
+    }
+
+    function openPortfolioDetailsTab(id, title, desc, image) {
+        document.getElementById('portfolio-id').value = id;
+        document.getElementById('portfolio-title').textContent = title;
+        document.getElementById('portfolio-desc').textContent = desc || "Sem descrição.";
+        document.getElementById('portfolio-image').src = image;
+        document.getElementById('portfolio-image-link').href = image;
+
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        
+        // Show portfolio details tab
+        document.getElementById('tab-portfolio-details').classList.add('active');
+        
+        document.getElementById('page-title').textContent = 'Detalhes da Arte';
+        document.getElementById('page-subtitle').textContent = 'Visualize e gerencie esta arte do seu portfólio.';
+        
+        window.scrollTo(0,0);
+    }
+
+    function closePortfolioDetailsTab() {
+        // Volta para a tab de Portfólio
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById('tab-portfolio').classList.add('active');
+        
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('.tab-btn[data-target="tab-portfolio"]').classList.add('active');
+        
+        document.getElementById('page-title').textContent = 'Visão Geral';
+        document.getElementById('page-subtitle').textContent = 'O que você precisa saber agora.';
+        
+        // Trigger page title update for Trabalhos tab
+        document.querySelector('.tab-btn[data-target="tab-portfolio"]').click();
+    }
+    
+    function checkStatusCompleted(status) {
+        const billingFields = document.getElementById('billing-fields');
+        const finalPrice = document.getElementById('manage-final-price');
+        if (status === 'COMPLETED') {
+            billingFields.style.display = 'block';
+            finalPrice.required = true;
+        } else {
+            billingFields.style.display = 'none';
+            finalPrice.required = false;
+        }
+    }
+
+    // Cropper Logic
+    let cropper = null;
+
+    document.getElementById('portfolio-image-upload').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const url = URL.createObjectURL(file);
+            const img = document.getElementById('crop-image');
+            
+            // Show modal first so it starts transitioning
+            document.getElementById('cropModal').classList.add('active');
+            
+            img.onload = function() {
+                if (cropper) {
+                    cropper.destroy();
+                }
+                
+                // Espera a animação do modal terminar (0.3s) para o Cropper calcular o tamanho certo
+                setTimeout(() => {
+                    cropper = new Cropper(img, {
+                        aspectRatio: NaN,
+                        viewMode: 1,
+                        autoCropArea: 0.9,
+                        background: true,
+                        zoomable: true,
+                    });
+                }, 350);
+            };
+            img.src = url;
+        }
+    });
+
+    function closeCropModal() {
+        document.getElementById('cropModal').classList.remove('active');
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+        document.getElementById('portfolio-image-upload').value = '';
+    }
+
+    function confirmCrop() {
+        if (!cropper) return;
+        
+        cropper.getCroppedCanvas({
+            fillColor: '#fff',
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high',
+        }).toBlob(function(blob) {
+            const file = new File([blob], 'cropped_image.jpg', { type: 'image/jpeg', lastModified: new Date().getTime() });
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            
+            document.getElementById('portfolio-image-upload').files = dataTransfer.files;
+            
+            document.getElementById('cropModal').classList.remove('active');
+            cropper.destroy();
+            cropper = null;
+        }, 'image/jpeg', 0.9);
+    }
+</script>
+
+<!-- CROP MODAL -->
+<div id="cropModal" class="modal-overlay">
+    <div class="modal-content-box form-container" style="max-width: 800px; text-align: center;">
+        <h3 class="form-title" style="font-size: 1.5rem; margin-bottom: 1rem;">Ajustar Imagem</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Arraste e use a roda do mouse para dar zoom, ou puxe pelas pontas para cortar.</p>
+        
+        <div style="height: 50vh; overflow: hidden; margin-bottom: 1.5rem; background: rgba(0,0,0,0.5); border-radius: 8px;">
+            <img id="crop-image" src="" style="display: block; max-width: 100%;">
+        </div>
+        
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+            <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeCropModal()">Cancelar</button>
+            <button type="button" class="btn-primary" style="flex: 2; font-size: 1.1rem; border: none;" onclick="confirmCrop()">Confirmar Corte</button>
+        </div>
+    </div>
+</div>
+
+{% if whatsapp_redirect %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const waUrl = "{{ whatsapp_redirect|safe }}";
+        // Attempt to open in a new tab. Browsers might block this because it's not a direct user action.
+        const newWindow = window.open(waUrl, '_blank');
+        
+        // Se o bloqueador de popup impedir, podemos alertar ou criar um elemento visual temporário
+        if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+            
+            // Add a temporary button at the top
+            const alertDiv = document.createElement('div');
+            alertDiv.style.position = 'fixed';
+            alertDiv.style.top = '20px';
+            alertDiv.style.left = '50%';
+            alertDiv.style.transform = 'translateX(-50%)';
+            alertDiv.style.background = '#25D366';
+            alertDiv.style.color = 'white';
+            alertDiv.style.padding = '15px 30px';
+            alertDiv.style.borderRadius = '30px';
+            alertDiv.style.zIndex = '9999';
+            alertDiv.style.boxShadow = '0 5px 15px rgba(37, 211, 102, 0.4)';
+            alertDiv.style.fontWeight = 'bold';
+            alertDiv.innerHTML = `<a href="${waUrl}" target="_blank" style="color: white; text-decoration: none;">Abrir WhatsApp para enviar confirmação!</a> <span style="margin-left: 10px; cursor: pointer;" onclick="this.parentElement.remove()">✕</span>`;
+            document.body.appendChild(alertDiv);
+        }
+    });
+</script>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const pieLabels = JSON.parse('{{ pie_labels|escapejs }}' || '[]');
+        const pieData = JSON.parse('{{ pie_data|escapejs }}' || '[]');
+        
+        const lineLabels = JSON.parse('{{ line_labels|escapejs }}' || '[]');
+        const lineData = JSON.parse('{{ line_data|escapejs }}' || '[]');
+
+        // Estilo global
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = "'Outfit', sans-serif";
+        
+        // Gráfico de Pizza
+        const ctxPie = document.getElementById('paymentPieChart');
+        if (ctxPie) {
+            new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: pieLabels,
+                    datasets: [{
+                        data: pieData,
+                        backgroundColor: [
+                            'rgba(212, 175, 55, 0.8)',
+                            'rgba(212, 175, 55, 0.5)',
+                            'rgba(212, 175, 55, 0.3)',
+                            'rgba(255, 255, 255, 0.2)'
+                        ],
+                        borderColor: 'rgba(9, 10, 12, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        // Gráfico de Linha
+        const ctxLine = document.getElementById('revenueLineChart');
+        if (ctxLine && lineLabels.length > 0) {
+            new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels: lineLabels,
+                    datasets: [{
+                        label: 'Faturamento (R$)',
+                        data: lineData,
+                        borderColor: '#d4af37',
+                        backgroundColor: 'rgba(212, 175, 55, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#d4af37',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+
+{% endblock %}

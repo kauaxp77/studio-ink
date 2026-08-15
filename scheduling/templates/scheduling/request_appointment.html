@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Agendar Horário - Ink Studio{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px;">
+    <div class="form-container">
+        <h2 class="form-title">Agendar Sessão</h2>
+        <p class="form-subtitle">Preencha os dados abaixo para solicitar um orçamento e agendar seu horário. Entraremos em contato via WhatsApp para confirmar.</p>
+
+        <form method="POST" enctype="multipart/form-data" class="glass-form">
+            {% csrf_token %}
+            
+            {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {% if field.name == 'date_time' %}
+                        <input type="hidden" name="date_time" id="id_date_time" required>
+                        <input type="text" class="flatpickr-dummy" style="display: none;">
+                        
+                        <div id="time-slots-container" style="display: none; margin-top: 1.5rem;">
+                            <h4 style="color: var(--text-primary); margin-bottom: 1rem; text-align: center; font-weight: 400;">Horários disponíveis para <span id="selected-date-display" style="color: var(--accent); font-weight: 600;"></span></h4>
+                            <div id="time-slots" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <!-- Botões gerados via JS -->
+                            </div>
+                        </div>
+                    {% else %}
+                        {{ field }}
+                    {% endif %}
+                    
+                    {% if field.errors %}
+                        <div class="form-error">
+                            {{ field.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            
+            <div style="text-align: center; margin-top: 2rem;">
+                <button type="submit" class="btn-primary" style="width: 100%; border: none; font-size: 1.1rem; padding: 1rem;">Solicitar Agendamento</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+<style>
+    /* Custom Flatpickr styling to match Ink Studio */
+    .flatpickr-calendar {
+        background: rgba(15, 16, 20, 0.8) !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid var(--glass-border) !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+        border-radius: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto;
+        font-family: 'Outfit', sans-serif !important;
+        padding: 10px !important;
+    }
+    
+    /* Header (Meses) */
+    .flatpickr-months {
+        background: transparent !important;
+        padding: 10px 0 20px 0 !important;
+    }
+    .flatpickr-months .flatpickr-month {
+        background: transparent !important;
+        color: var(--accent) !important;
+        fill: var(--accent) !important;
+    }
+    .flatpickr-current-month .cur-month {
+        font-family: 'Playfair Display', serif !important;
+        font-weight: 700 !important;
+        color: var(--accent) !important;
+        font-size: 1.2rem !important;
+        margin-left: 0.5rem;
+        display: inline-block;
+    }
+    .flatpickr-current-month input.cur-year {
+        font-family: 'Playfair Display', serif !important;
+        font-weight: 700 !important;
+        color: var(--accent) !important;
+        background: transparent !important;
+    }
+    .flatpickr-current-month input.cur-year:hover {
+        background: transparent !important;
+    }
+    .numInputWrapper:hover {
+        background: transparent !important;
+    }
+    .numInputWrapper span.arrowUp,
+    .numInputWrapper span.arrowDown {
+        display: none !important;
+    }
+    
+    /* Dias da Semana */
+    .flatpickr-weekdays {
+        background: transparent !important;
+        border-bottom: 1px solid var(--glass-border) !important;
+        height: 40px !important;
+    }
+    span.flatpickr-weekday {
+        color: var(--text-secondary) !important;
+        font-weight: 600 !important;
+        background: transparent !important;
+    }
+    
+    /* Container dos Dias */
+    .flatpickr-innerContainer, .flatpickr-rContainer, .flatpickr-days, .dayContainer {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+    }
+    .flatpickr-days {
+        background: transparent !important;
+        padding-top: 15px !important;
+    }
+    
+    @keyframes calendarFadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-calendar-month {
+        animation: calendarFadeIn 0.35s ease-out forwards;
+    }
+    
+    /* Dias Individuais */
+    .flatpickr-day {
+        max-width: 14.28% !important;
+        height: 45px !important;
+        line-height: 45px !important;
+        color: var(--text-primary) !important;
+        border-radius: 8px !important;
+        margin: 2px 0 !important;
+        transition: all 0.3s ease;
+        background: transparent !important;
+        border: 1px solid transparent !important;
+    }
+    div.flatpickr-calendar .flatpickr-day:hover:not(.flatpickr-disabled):not(.selected) {
+        background: rgba(212, 175, 55, 0.15) !important;
+        border-color: transparent !important;
+        color: var(--accent) !important;
+    }
+    div.flatpickr-calendar .flatpickr-day.selected, 
+    div.flatpickr-calendar .flatpickr-day.selected:focus, 
+    div.flatpickr-calendar .flatpickr-day.selected:hover {
+        background: var(--accent) !important;
+        border-color: var(--accent) !important;
+        color: #000 !important;
+        font-weight: 700 !important;
+        box-shadow: 0 0 15px rgba(212, 175, 55, 0.4) !important;
+    }
+    div.flatpickr-calendar .flatpickr-day.today {
+        border: 1px solid var(--accent) !important;
+        color: var(--accent) !important;
+    }
+    div.flatpickr-calendar .flatpickr-day.flatpickr-disabled, 
+    div.flatpickr-calendar .flatpickr-day.flatpickr-disabled:hover {
+        color: rgba(255, 255, 255, 0.3) !important; /* Mais claro para ficar legível */
+        background: transparent !important;
+        cursor: not-allowed !important;
+    }
+    
+    /* Setas (Next/Prev) */
+    .flatpickr-prev-month svg, .flatpickr-next-month svg {
+        fill: var(--accent) !important;
+        width: 14px;
+        height: 14px;
+    }
+    .flatpickr-prev-month:hover svg, .flatpickr-next-month:hover svg {
+        fill: #fff !important;
+    }
+
+    .flatpickr-time {
+        display: none !important;
+    }
+    /* Esconder inputs */
+    .flatpickr-dummy, .flatpickr-input {
+        display: none !important;
+    }
+    /* Estilos dos botões de horário */
+    .time-slot-btn {
+        padding: 0.8rem;
+        background: rgba(0,0,0,0.3);
+        border: 1px solid var(--glass-border);
+        color: var(--text-primary);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-family: 'Outfit', sans-serif;
+        font-size: 1rem;
+    }
+    .time-slot-btn:hover:not(:disabled) {
+        border-color: var(--accent);
+        box-shadow: 0 0 10px var(--accent-glow);
+    }
+    .time-slot-btn.selected {
+        background: var(--accent);
+        color: #000;
+        border-color: var(--accent);
+        font-weight: 600;
+    }
+    .time-slot-btn:disabled {
+        background: rgba(255, 0, 0, 0.1);
+        color: #666;
+        cursor: not-allowed;
+        border-color: rgba(255, 0, 0, 0.2);
+        text-decoration: line-through;
+    }
+    
+    @media (max-width: 480px) {
+        #time-slots {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const timeSlotsContainer = document.getElementById('time-slots-container');
+        const timeSlotsDiv = document.getElementById('time-slots');
+        const dateDisplay = document.getElementById('selected-date-display');
+        const hiddenDateTimeInput = document.getElementById('id_date_time');
+        
+        const fixedSlots = ['09:00', '11:30', '14:30', '17:00'];
+        let currentDateStr = '';
+
+        function renderTimeSlots(bookedTimes) {
+            timeSlotsDiv.innerHTML = '';
+            hiddenDateTimeInput.value = ''; // reseta
+            
+            fixedSlots.forEach(time => {
+                if (bookedTimes.includes(time)) {
+                    return; // Se estiver ocupado, nem renderiza o botão
+                }
+                
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'time-slot-btn';
+                btn.textContent = time;
+                
+                btn.onclick = function() {
+                    // Desmarca os outros
+                    document.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('selected'));
+                    // Marca este
+                    btn.classList.add('selected');
+                    // Preenche o input escondido
+                    hiddenDateTimeInput.value = `${currentDateStr} ${time}`;
+                };
+                timeSlotsDiv.appendChild(btn);
+            });
+            timeSlotsContainer.style.display = 'block';
+        }
+
+        fetch("{% url 'scheduling:booked_dates_api' %}")
+            .then(response => response.json())
+            .then(data => {
+                const blockedDates = data.blocked_dates;
+                
+                let maxDateLimit = new Date();
+                maxDateLimit.setMonth(maxDateLimit.getMonth() + 2);
+
+                flatpickr(".flatpickr-dummy", {
+                    inline: true,
+                    enableTime: false,
+                    dateFormat: "Y-m-d",
+                    minDate: "today",
+                    maxDate: maxDateLimit,
+                    locale: "pt",
+                    monthSelectorType: "static",
+                    disable: [
+                        function(date) {
+                            return date.getDay() === 0;
+                        },
+                        ...blockedDates
+                    ],
+                    onMonthChange: function(selectedDates, dateStr, instance) {
+                        const daysContainer = instance.daysContainer;
+                        if (daysContainer) {
+                            daysContainer.classList.remove('animate-calendar-month');
+                            void daysContainer.offsetWidth; // force reflow
+                            daysContainer.classList.add('animate-calendar-month');
+                        }
+                    },
+                    onChange: function(selectedDates, dateStr, instance) {
+                        currentDateStr = dateStr;
+                        if(selectedDates[0]) {
+                            dateDisplay.textContent = selectedDates[0].toLocaleDateString('pt-BR');
+                        }
+                        
+                        fetch(`{% url 'scheduling:times_for_date_api' %}?date=${dateStr}`)
+                            .then(res => res.json())
+                            .then(timeData => {
+                                renderTimeSlots(timeData.booked_times || []);
+                            });
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching dates:', error));
+    });
+</script>
+{% endblock %}

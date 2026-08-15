@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Termo de Consentimento - {{ appointment.client.name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #000;
+            background: #fff;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            text-align: center;
+            font-size: 16px;
+            font-weight: normal;
+            margin-bottom: 30px;
+        }
+
+        p {
+            line-height: 1.6;
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        .info-box {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .info-line {
+            margin-bottom: 8px;
+        }
+
+        .signature-box {
+            margin-top: 60px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .signature-line {
+            width: 45%;
+            text-align: center;
+            border-top: 1px solid #000;
+            padding-top: 10px;
+        }
+
+        .studio-info {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+
+        @media print {
+            body {
+                font-size: 12pt;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+        }
+
+        .btn-print {
+            display: block;
+            width: 200px;
+            margin: 20px auto;
+            padding: 10px;
+            text-align: center;
+            background: #D4AF37;
+            color: #000;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<!-- A tag onload fará abrir a caixa de impressão assim que abrir a página! -->
+
+<body onload="window.print()">
+    <button onclick="window.print()" class="no-print btn-print">🖨️ Imprimir Termo de Responsabilidade</button>
+    <div class="container">
+        <h1>TERMO DE CONSENTIMENTO E RESPONSABILIDADE</h1>
+        <h2>PROCEDIMENTO DE TATUAGEM</h2>
+
+        <div class="info-box">
+            <div class="info-line"><strong>Nome do Cliente:</strong> {{ appointment.client.name }}</div>
+            <div class="info-line"><strong>E-mail:</strong> {{ appointment.client.email }}</div>
+            <div class="info-line"><strong>Telefone (WhatsApp):</strong> {{ appointment.client.phone }}</div>
+            <div class="info-line"><strong>Data do Procedimento:</strong> {{ appointment.date_time|date:"d/m/Y - H:i" }}
+            </div>
+            <div class="info-line"><strong>Descrição da Arte:</strong> {{ appointment.description }}</div>
+        </div>
+
+        <p>Eu, devidamente qualificado(a) acima, declaro para os devidos fins que:</p>
+        <p>1. Sou civilmente capaz e maior de 18 (dezoito) anos, assumindo total responsabilidade civil e criminal por
+            esta declaração.</p>
+        <p>2. Concordo voluntariamente em submeter-me ao procedimento de tatuagem realizado pelo(a) tatuador(a)
+            residente do estúdio <strong>Ink Studio</strong>.</p>
+        <p>3. Fui amplamente informado(a) e orientado(a) sobre todos os cuidados prévios e posteriores necessários para
+            uma boa cicatrização da pele, isentando o tatuador e o estúdio de quaisquer complicações decorrentes de má
+            higienização (negligência), exposição ao sol, banhos de mar/piscina, atritos físicos ou alergias individuais
+            desconhecidas previamente à tintura ou materiais empregados.</p>
+        <p>4. Reconheço e entendo que a tatuagem é uma intervenção perfurocortante contendo tinta, resultando numa marca
+            permanente na pele. Afirmo ter tido total liberdade para visualizar, sugerir modificações e aprovar
+            integralmente o decalque (desenho guia) impresso e fixado em meu corpo antes do início do procedimento
+            definitivo do qual se trata este termo.</p>
+        <p>5. Declaro não possuir hemofilia, epilepsia, hepatites, doenças de pele agudas ou crônicas locais, infecções
+            ativas, deficiências no sistema imunológico que me impeçam de receber o contato ou estar gestante/lactante
+            no momento deste procedimento.</p>
+
+        <p style="margin-top: 30px; text-align: center;">Por ser esta a expressão da verdade e por estar de total e
+            pleno acordo, assino o presente termo e autorizo o trabalho e a reprodução em portfólio digital.</p>
+
+        <div class="signature-box">
+            <div class="signature-line">
+                <br>
+                Assinatura do Cliente
+            </div>
+            <div class="signature-line">
+                <br>
+                Local e Data
+            </div>
+        </div>
+
+        <div class="studio-info">
+            Este termo é gerado automaticamente pelo sistema de gestão <strong>Ink Studio App</strong>. Guarde em local
+            seguro.
+        </div>
+    </div>
+</body>
+
+</html>
