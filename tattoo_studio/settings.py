@@ -95,6 +95,13 @@ if env('POSTGRES_URL', default=None):
     DATABASES['default'] = env.db('POSTGRES_URL')
 elif env('DATABASE_URL', default=None):
     DATABASES['default'] = env.db('DATABASE_URL')
+elif env('VERCEL', default=None) and env('POSTGRES_HOST', default='db') == 'db':
+    # On Vercel but missing database host (falling back to "db" which fails)
+    # Using local SQLite file so the site loads with existing data
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 elif env('POSTGRES_DB', default=None):
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.postgresql',
