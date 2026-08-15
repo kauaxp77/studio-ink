@@ -1,4 +1,5 @@
 from django.db import models
+from tattoo_studio.utils import convert_image_to_webp
 
 class Work(models.Model):
     CATEGORY_CHOICES = [
@@ -11,6 +12,11 @@ class Work(models.Model):
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='tattoo', verbose_name="Categoria")
     image = models.ImageField(upload_to='portfolio_images/', verbose_name="Imagem")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Adicionado em")
+
+    def save(self, *args, **kwargs):
+        if self.image:
+            convert_image_to_webp(self.image)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title
@@ -25,6 +31,11 @@ class ArtistProfile(models.Model):
     bio = models.TextField(verbose_name="Biografia (Sobre Mim)")
     profile_image = models.ImageField(upload_to='artist_images/', verbose_name="Foto de Perfil")
     
+    def save(self, *args, **kwargs):
+        if self.profile_image:
+            convert_image_to_webp(self.profile_image)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.name
         
@@ -37,6 +48,11 @@ class Certification(models.Model):
     image = models.ImageField(upload_to='certifications/', verbose_name="Imagem do Certificado")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Adicionado em")
     
+    def save(self, *args, **kwargs):
+        if self.image:
+            convert_image_to_webp(self.image)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.title
         
